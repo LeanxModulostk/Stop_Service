@@ -1,1 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STOP SERVICES</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #121212;
+      --card: #1e1e1e;
+      --btn: #2c2c2c;
+      --btn-active: #3a3a3a;
+      --text: #e6e6e6;
+      --muted: #9a9a9a;
+      --line: #333;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.4 system-ui, sans-serif;
+      margin: 0;
+      padding: 12px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      margin: 4px 0 12px;
+      text-align: center;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+    pre {
+      color: var(--muted);
+      font-size: .78rem;
+      margin: 0;
+      max-height: 40vh;
+      min-height: 48px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    button {
+      background: var(--btn);
+      border: 0;
+      border-radius: 10px;
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      padding: 12px;
+    }
+    button:active { background: var(--btn-active); }
+    .full { width: 100%; }
+    .row { display: flex; gap: 8px; margin-top: 8px; }
+    .row > button { flex: 1; }
+    .row:first-child { margin-top: 0; }
+    .check-btn { font-size: .85rem; padding: 12px 4px; }
+    details summary {
+      cursor: pointer;
+      font-weight: 600;
+      list-style: none;
+      padding: 4px 2px;
+      text-align: center;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details[open] summary { margin-bottom: 8px; }
+    .count { color: var(--muted); font-size: .85rem; }
+    .chips {
+      background: rgba(0, 0, 0, .25);
+      border-radius: 10px;
+      margin: 8px 0;
+      max-height: 35vh;
+      overflow: auto;
+      padding: 4px;
+    }
+    .chip {
+      align-items: center;
+      background: var(--btn);
+      border-radius: 14px;
+      display: inline-flex;
+      font-size: .8rem;
+      gap: 4px;
+      margin: 3px;
+      padding: 2px 3px 2px 10px;
+    }
+    .chip button {
+      border-radius: 50%;
+      flex: none;
+      font-size: .8rem;
+      height: 22px;
+      line-height: 1;
+      padding: 0;
+      width: 22px;
+    }
+    input[type="text"] {
+      background: rgba(0, 0, 0, .3);
+      border: 0;
+      border-radius: 10px;
+      color: var(--text);
+      flex: 1;
+      font: inherit;
+      min-width: 0;
+      outline: 0;
+      padding: 12px;
+    }
+    .info-item { border-top: 1px solid var(--line); padding: 8px 2px; }
+    .info-item:first-of-type { border-top: 0; }
+    .info-title { font-weight: 600; }
+    .info-desc, .info-option { color: var(--muted); font-size: .85rem; }
+    body { padding-bottom: 76px; }
+    .fab {
+      background: var(--btn) url("lean.png") center/cover no-repeat;
+      border-radius: 50%;
+      bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
+      height: 48px;
+      position: fixed;
+      right: 16px;
+      width: 48px;
+    }
+    .fab:active { opacity: .7; }
+    .lang {
+      font-size: 1.3rem;
+      height: 40px;
+      line-height: 1;
+      padding: 0;
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      width: 40px;
+      border-radius: 50%;
+    }
+    h1 { padding: 0 48px; }
+  </style>
+</head>
+<body>
+  <button id="langBtn" class="lang" aria-label="Idioma / Language">🇵🇪</button>
+  <h1>STOP SERVICES!</h1>
 
+  <div class="card"><pre id="log-output">@LeanHijosdesusMadres</pre></div>
+
+  <div class="card">
+    <button id="runSvc" class="full">STOP SERVICES!</button>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button class="check-btn" data-script="check_list.sh" data-i18n="checkList">Check List</button>
+      <button class="check-btn" data-script="check_daemons.sh" data-i18n="activeServices">Active Services</button>
+      <button class="check-btn" data-script="check_ram.sh" data-i18n="checkRam">Check RAM</button>
+    </div>
+  </div>
+
+  <details class="card">
+    <summary data-i18n="editServices">Edit Services</summary>
+    <div class="count" id="svcCount" data-i18n="loading">Loading...</div>
+    <div id="chips" class="chips"></div>
+    <div class="row">
+      <input type="text" id="newSvc" placeholder="service name" data-i18n-ph="svcPlaceholder" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="addSvc" style="flex:none;" data-i18n="add">Add</button>
+    </div>
+    <div class="row">
+      <button id="saveSvc" data-i18n="save">Save</button>
+      <button id="resetSvc" data-i18n="restore">Restore default</button>
+    </div>
+  </details>
+
+  <details class="card">
+    <summary data-i18n="showInfo">Show Info</summary>
+    <div class="info-item">
+      <div class="info-title" data-i18n="editServices">Edit Services</div>
+      <div class="info-desc" data-i18n="infoEditDesc">Add or remove the services. The list is saved and kept when the module is updated.</div>
+      <div class="info-option" data-i18n-html="infoSave"><b>Save:</b> save the new list to the file</div>
+      <div class="info-option" data-i18n-html="infoRestore"><b>Restore default:</b> go back to the module's original list</div>
+    </div>
+    <div class="info-item">
+      <div class="info-title">STOP SERVICES!</div>
+      <div class="info-desc" data-i18n="infoStopDesc">Stops the services in your list right now (saves pending changes first).</div>
+    </div>
+    <div class="info-item">
+      <div class="info-title" data-i18n="infoChecksTitle">Check List / Active Services / Check RAM</div>
+      <div class="info-option" data-i18n-html="infoCheckList"><b>Check List:</b> status of the services in your list</div>
+      <div class="info-option" data-i18n-html="infoActive"><b>Active Services:</b> all init services currently running</div>
+      <div class="info-option" data-i18n-html="infoRam"><b>Check RAM:</b> top 15 processes by RAM usage</div>
+    </div>
+  </details>
+
+  <a class="fab" id="tgBtn" href="https://t.me/modulostk" aria-label="Telegram"></a>
+
+<script type="module">
+  // exec local: llama directamente a la API `ksu` que inyecta el WebUI (sin internet)
+  function exec(command, options = {}) {
+    return new Promise((resolve, reject) => {
+      const cb = `exec_cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const done = () => { delete window[cb]; };
+      window[cb] = (errno, stdout, stderr) => { done(); resolve({ errno, stdout, stderr }); };
+      try {
+        if (!window.ksu || typeof window.ksu.exec !== 'function') {
+          throw new Error('WebUI API (ksu) not available');
+        }
+        window.ksu.exec(command, JSON.stringify(options), cb);
+      } catch (e) {
+        done();
+        reject(e);
+      }
+    });
+  }
+
+  const MOD = "/data/adb/modules/stopservices";
+  const CFG = "/data/adb/stopservices/services.list";
+  const DEFAULT = `${MOD}/other/services.default`;
+  const VALID = /^[A-Za-z0-9._-]+$/;
+
+  const logOutput = document.getElementById('log-output');
+
+  // ---------- Idioma (inglés por defecto) ----------
+  const I18N = {
+    en: {
+      checkList: 'Check List', activeServices: 'Active Services', checkRam: 'Check RAM',
+      editServices: 'Edit Services', showInfo: 'Show Info', loading: 'Loading...',
+      svcPlaceholder: 'service name', add: 'Add', save: 'Save', restore: 'Restore default',
+      infoEditDesc: 'Add or remove the services. The list is saved and kept when the module is updated.',
+      infoSave: '<b>Save:</b> save the new list to the file',
+      infoRestore: "<b>Restore default:</b> go back to the module's original list",
+      infoStopDesc: 'Stops the services in your list right now (saves pending changes first).',
+      infoChecksTitle: 'Check List / Active Services / Check RAM',
+      infoCheckList: '<b>Check List:</b> status of the services in your list',
+      infoActive: '<b>Active Services:</b> all init services currently running',
+      infoRam: '<b>Check RAM:</b> top 15 processes by RAM usage',
+      running: l => `Running: ${l}...`,
+      done: 'Command executed successfully',
+      count: (n, d) => `${n} services${d ? ' · unsaved changes' : ''}`,
+      saveDirty: 'Save *',
+      remove: n => `Remove ${n}`,
+      listUnreadable: '⚠ The list of services could not be read',
+      savedList: n => `✓ Saved list: ${n} services`,
+      saveFail: e => `✗ Could not be saved: ${e || 'unknown error'}`,
+      invalidName: '⚠ Invalid name (only: letters, numbers, . _ -)',
+      alreadyIn: n => `⚠ ${n} is already on the list`,
+      restoreFail: '✗ Could not restore the list',
+      restoredList: n => `✓ Restored list: ${n} services`,
+      langLabel: 'Switch to Spanish'
+    },
+    es: {
+      checkList: 'Ver lista', activeServices: 'Servicios activos', checkRam: 'Ver RAM',
+      editServices: 'Editar servicios', showInfo: 'Ver info', loading: 'Cargando...',
+      svcPlaceholder: 'nombre del servicio', add: 'Agregar', save: 'Guardar', restore: 'Restaurar lista',
+      infoEditDesc: 'Agrega o quita servicios. La lista se guarda y se conserva al actualizar el módulo.',
+      infoSave: '<b>Guardar:</b> guarda la nueva lista en el archivo',
+      infoRestore: '<b>Restaurar lista:</b> vuelve a la lista original del módulo',
+      infoStopDesc: 'Detiene ahora mismo los servicios de tu lista (antes guarda los cambios pendientes).',
+      infoChecksTitle: 'Ver lista / Servicios activos / Ver RAM',
+      infoCheckList: '<b>Ver lista:</b> estado de los servicios de tu lista',
+      infoActive: '<b>Servicios activos:</b> todos los servicios init que están corriendo',
+      infoRam: '<b>Ver RAM:</b> los 15 procesos que más RAM usan',
+      running: l => `Ejecutando: ${l}...`,
+      done: 'Comando ejecutado correctamente',
+      count: (n, d) => `${n} servicios${d ? ' · cambios sin guardar' : ''}`,
+      saveDirty: 'Guardar *',
+      remove: n => `Quitar ${n}`,
+      listUnreadable: '⚠ No se pudo leer la lista de servicios',
+      savedList: n => `✓ Lista guardada: ${n} servicios`,
+      saveFail: e => `✗ No se pudo guardar: ${e || 'error desconocido'}`,
+      invalidName: '⚠ Nombre inválido (solo letras, números, . _ -)',
+      alreadyIn: n => `⚠ ${n} ya está en la lista`,
+      restoreFail: '✗ No se pudo restaurar la lista',
+      restoredList: n => `✓ Lista restaurada: ${n} servicios`,
+      langLabel: 'Cambiar a inglés'
+    }
+  };
+  let lang = 'en';
+  try { if (localStorage.getItem('lang') === 'es') lang = 'es'; } catch (e) {}
+  let loaded = false;
+  const t = (k, ...a) => {
+    const v = I18N[lang][k];
+    return typeof v === 'function' ? v(...a) : v;
+  };
+  const langBtn = document.getElementById('langBtn');
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+    // Bandera = idioma al que se cambiará al presionar
+    langBtn.textContent = lang === 'en' ? '🇵🇪' : '🇺🇸';
+    langBtn.setAttribute('aria-label', t('langLabel'));
+    if (loaded) render();
+  }
+
+  // Quita códigos ANSI (colores / clear) de la salida de los scripts
+  function stripAnsi(t) {
+    return t
+      .replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '')
+      .replace(/\\033\[[0-9;?]*[A-Za-z]/g, '');
+  }
+
+  // Muestra texto (una o varias líneas) en la ventana de log
+  function updateLog(message, isError = false) {
+    const timestamp = new Date().toLocaleTimeString();
+    logOutput.style.color = isError ? 'rgba(255, 100, 100, 0.9)' : 'rgba(255, 255, 255, 0.75)';
+    logOutput.textContent = `[${timestamp}] ${message}`;
+    logOutput.scrollTop = 0;
+    console.log(message);
+  }
+
+  // Ejecuta un comando y devuelve {out, err, ok}
+  async function run(command) {
+    try {
+      const r = await exec(command);
+      return {
+        out: stripAnsi(r.stdout || '').trim(),
+        err: stripAnsi(r.stderr || '').trim(),
+        ok: r.errno === 0 || r.errno === undefined
+      };
+    } catch (error) {
+      console.error('Error executing command:', error);
+      return { out: '', err: error.message, ok: false };
+    }
+  }
+
+  // Ejecuta un comando y vuelca el resultado en el log
+  async function executeCommand(command, label) {
+    updateLog(t('running', label));
+    const r = await run(command);
+    if (r.out) {
+      updateLog(`✓ ${label}\n${r.out}${r.err ? '\n\n' + r.err : ''}`, !r.ok && !r.out);
+    } else if (r.err) {
+      updateLog(`⚠ ${label}: ${r.err}`, true);
+    } else {
+      updateLog(`✓ ${label}: ${t('done')}`);
+    }
+    return r;
+  }
+
+  // ---------- Editor de servicios ----------
+  let services = [];
+  let dirty = false;
+  const chipsEl = document.getElementById('chips');
+  const countEl = document.getElementById('svcCount');
+  const saveBtn = document.getElementById('saveSvc');
+  const newSvc = document.getElementById('newSvc');
+
+  function render() {
+    chipsEl.textContent = '';
+    services.forEach((name, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      const label = document.createElement('span');
+      label.textContent = name;
+      const del = document.createElement('button');
+      del.textContent = '×';
+      del.setAttribute('aria-label', t('remove', name));
+      del.addEventListener('click', () => {
+        services.splice(i, 1);
+        dirty = true;
+        render();
+      });
+      chip.append(label, del);
+      chipsEl.appendChild(chip);
+    });
+    countEl.textContent = t('count', services.length, dirty);
+    saveBtn.textContent = dirty ? t('saveDirty') : t('save');
+  }
+
+  function parseList(text) {
+    const seen = new Set();
+    text.split('\n').forEach(l => {
+      const n = l.trim();
+      if (n && !n.startsWith('#') && VALID.test(n)) seen.add(n);
+    });
+    return [...seen];
+  }
+
+  async function loadServices() {
+    const r = await run(`cat ${CFG} 2>/dev/null || cat ${DEFAULT}`);
+    services = parseList(r.out);
+    dirty = false;
+    loaded = true;
+    render();
+    if (!services.length) updateLog(t('listUnreadable'), true);
+  }
+
+  async function saveServices() {
+    const cmd = services.length
+      ? `mkdir -p /data/adb/stopservices && printf '%s\\n' ${services.join(' ')} > ${CFG}`
+      : `mkdir -p /data/adb/stopservices && : > ${CFG}`;
+    const r = await run(cmd);
+    if (r.ok && !r.err) {
+      dirty = false;
+      render();
+      updateLog(t('savedList', services.length));
+      return true;
+    }
+    updateLog(t('saveFail', r.err), true);
+    return false;
+  }
+
+  function addService() {
+    const name = newSvc.value.trim();
+    if (!name) return;
+    if (!VALID.test(name)) {
+      updateLog(t('invalidName'), true);
+      return;
+    }
+    if (services.includes(name)) {
+      updateLog(t('alreadyIn', name), true);
+      return;
+    }
+    services.push(name);
+    dirty = true;
+    newSvc.value = '';
+    render();
+    chipsEl.scrollTop = chipsEl.scrollHeight;
+  }
+
+  window.addEventListener("load", () => {
+    // Editor
+    document.getElementById('addSvc').addEventListener('click', addService);
+    newSvc.addEventListener('keydown', e => { if (e.key === 'Enter') addService(); });
+    saveBtn.addEventListener('click', saveServices);
+    document.getElementById('resetSvc').addEventListener('click', async () => {
+      const r = await run(`mkdir -p /data/adb/stopservices && cp ${DEFAULT} ${CFG}`);
+      if (!r.ok) { updateLog(r.err ? `✗ ${r.err}` : t('restoreFail'), true); return; }
+      await loadServices();
+      updateLog(t('restoredList', services.length));
+    });
+    document.getElementById('runSvc').addEventListener('click', async () => {
+      if (dirty && !(await saveServices())) return;
+      await executeCommand(`sh ${MOD}/service.sh`, 'STOP SERVICES!');
+    });
+
+    // Check List / Daemons / RAM -> resultado en la ventana de arriba
+    document.querySelectorAll('button.check-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        await executeCommand(`sh ${MOD}/other/${btn.dataset.script}`, btn.textContent);
+      });
+    });
+
+    // Botón de idioma (arriba a la derecha)
+    langBtn.addEventListener('click', () => {
+      lang = lang === 'en' ? 'es' : 'en';
+      try { localStorage.setItem('lang', lang); } catch (e) {}
+      applyLang();
+    });
+    applyLang();
+
+    // Botón flotante -> canal de Telegram
+    document.getElementById('tgBtn').addEventListener('click', e => {
+      e.preventDefault();
+      run('am start -a android.intent.action.VIEW -d https://t.me/modulostk >/dev/null 2>&1');
+    });
+
+    loadServices();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+id=stopservices
+name=Stop Services!
+version=v1
+versionCode=1
+author=@LeanHijosdesusMadres
+description=A module that stops logging, tracing and telemetry services on Android at boot, with a WebUI to manage the list and check the result.
+support=https://t.me/modulostk
+banner=/webroot/leanbanner.jpg
+actionIcon=lean.jpg
+donate=https://www.paypal.me/LeanHijosdesusMadres
